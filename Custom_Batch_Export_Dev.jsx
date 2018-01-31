@@ -1,3 +1,32 @@
+/*
+
+	Script Name: Custom Batch Export
+	Author: William Dowling
+	Creation Date: January 27, 2018
+	Description:
+		Batch a folder of .ai files
+		and export each artboard of each
+		.ai file as svg, pdf, and multiple
+		sizes of png.
+	
+	Usage:
+		Backup your folder of .ai files.
+		Execute the script from File > Scripts > Custom_Batch_Export.jsx
+		Select the folder you want to batch process
+		Click "Open"
+		Sit back and relax.	
+
+	Disclaimer:
+		Author is not responsible for any harm
+		done to your file system as a result of
+		usage of this script. It is merely a tool
+		and you should always ensure you have proper
+		backups of any files you are going to batch
+		process. Never run this script or any
+		batch script on your only copy of a folder.
+
+*/
+
 function CustomBatchExport()
 {
 
@@ -8,6 +37,28 @@ function CustomBatchExport()
 		//with the script execution duration 
 		//in milliseconds.
 		const SHOW_EXECUTION_DURATION = false;
+
+		//PNG_EXPORT_SIZES
+		//add or remove any png sizes as needed.
+		//values are in points. a 72dpi output is
+		//assumed which makes for a 1:1 conversion
+		//from points to pixels.
+		//If the export resolution is different,
+		//then these sizes will have to be updated
+		//to accomodate that.
+		var PNG_EXPORT_SIZES =
+			[
+				24,
+				32,
+				48,
+				72,
+				96,
+				120,
+				144,
+				192,
+				240,
+				480,
+			]
 
 	///////Begin/////////
 	///Logic Container///
@@ -123,20 +174,25 @@ function CustomBatchExport()
 			svgOptions = setSvgOptions(x);
 			saveSvg(docRef, curSvgFolder, svgOptions, x, curAbName);
 
-			//export one png for each size in the pngExportSizes array
+			//export one png for each size in the PNG_EXPORT_SIZES array
 			curScale = getAbWidth(aB[x]);
 
-			for (var y = 0, pngLen = pngExportSizes.length; y < pngLen; y++)
+			curPngFolder = new Folder(curFilePath + "/PNG/");
+			if(!curPngFolder.exists)
 			{
-				newScale = getScale(curScale, pngExportSizes[y]);
+				curPngFolder.create();
+			}
+			for (var y = 0, pngLen = PNG_EXPORT_SIZES.length; y < pngLen; y++)
+			{
+				newScale = getScale(curScale, PNG_EXPORT_SIZES[y]);
 				pngOptions = setPngOptions(newScale);
-				curPngFolder = new Folder(curFilePath + "/" + pngExportSizes[y] + "w");
-				if (!curPngFolder.exists)
+				curPngSizeFolder = new Folder(curPngFolder + "/" + PNG_EXPORT_SIZES[y] + "w");
+				if (!curPngSizeFolder.exists)
 				{
-					curPngFolder.create();
+					curPngSizeFolder.create();
 				};
 
-				savePng(docRef, curPngFolder, pngOptions, x, curAbName);
+				savePng(docRef, curPngSizeFolder, pngOptions, x, curAbName);
 			}
 		}
 
@@ -144,7 +200,6 @@ function CustomBatchExport()
 	}
 
 	eval("@JSXBIN@ES@2.0@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");
-
 
 	// //*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//
 	// //*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//
@@ -340,21 +395,9 @@ function CustomBatchExport()
 	var curScale, newScale;
 	var curAbName;
 	//folder variables
-	var curPdfFolder, curSvgFolder, curPngFolder;
+	var curPdfFolder, curSvgFolder, curPngFolder, curPngSizeFolder;
 
-	var pngExportSizes =
-		[
-			24,
-			32,
-			48,
-			72,
-			96,
-			120,
-			144,
-			192,
-			240,
-			480,
-		]
+	
 
 	batchInit(exportArtboards);
 

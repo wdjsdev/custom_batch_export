@@ -57,7 +57,7 @@ function CustomBatchExport()
 				144,
 				192,
 				240,
-				480,
+				480
 			]
 
 	///////Begin/////////
@@ -76,6 +76,7 @@ function CustomBatchExport()
 	{
 		var options = new PDFSaveOptions();
 		options.artboardRange = "" + (abIndex + 1);
+		options.preserveEditability = false;
 		return options;
 	}
 
@@ -111,14 +112,56 @@ function CustomBatchExport()
 	function setSvgOptions(abIndex)
 	{
 		var options = new ExportOptionsSVG();
-		options.preserveEditability = true;
+		options.preserveEditability = false;
+		options.saveMultipleArtboards = true;
+		options.artboardRange = "" + (abIndex + 1);
 		return options;
 	}
+
+
+	////////////////////////
+	////////ATTENTION://////
+	//
+	//		this function deprecated because based on the options available to me
+	// 		i had to choose whether to include all irrelevant artwork in each svg
+	//		or get a double naming situation on file save.
+	//			eg. an artboard called "assisted-living", would be saved as an svg
+	//				with the following name: "assisted-living_assisted-living.svg".
+	//
+	///////////////////////
+	// function saveSvg(doc, filePath, options, artboardIndex, artboardName)
+	// {
+	// 	var destFile = new File(filePath + "/" + artboardName + ".svg");
+	// 	// var destFile = new File(filePath + "/" + ".svg");
+	// 	doc.exportFile(destFile, ExportType.SVG, options);
+	// }
+
 
 	function saveSvg(doc, filePath, options, artboardIndex, artboardName)
 	{
 		var destFile = new File(filePath + "/" + artboardName + ".svg");
-		doc.exportFile(destFile, ExportType.SVG, options);
+		var tempFolder = new Folder(Folder.temp + "/tmpFolder" + artboardName);
+		if(!tempFolder.exists){tempFolder.create()};
+
+		var tempFile = new File(tempFolder.fsName + "/" + artboardName + ".svg");
+
+		doc.exportFile(tempFile, ExportType.SVG, options);
+
+		//verify the file was exported
+		var tempFolderContents = tempFolder.getFiles();
+		if(!tempFolderContents.length)
+		{
+			errorList.push("Failed to export the artboard: " + artboardName + ".");
+			tempFolder.remove();
+		}
+		else
+		{
+			tempFile = tempFolderContents[0];
+			tempFile.copy(destFile);
+			tempFile.remove();
+			tempFolder.remove();
+		}
+		
 	}
 
 
@@ -171,6 +214,7 @@ function CustomBatchExport()
 			{
 				curSvgFolder.create();
 			};
+			// svgOptions = setSvgOptions(x);
 			svgOptions = setSvgOptions(x);
 			saveSvg(docRef, curSvgFolder, svgOptions, x, curAbName);
 
@@ -201,6 +245,84 @@ function CustomBatchExport()
 
 	eval("@JSXBIN@ES@2.0@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");
 
+	
+
+
+	////////End//////////
+	///Logic Container///
+	/////////////////////
+
+	if(SHOW_EXECUTION_DURATION)
+	{
+		var startTime = stopWatch();
+	}
+
+	var valid = true;
+
+	var user = $.getenv("USER")
+	var desktopPath = "/Volumes/Macintosh HD/Users/" + user + "/Desktop/";
+	var desktopFolder = new Folder(desktopPath);
+
+	var errorList = [];
+
+	var docRef, aB, workingFolderPath,curFilePath;
+	var pngOptions, pdfOptions, svgOptions;
+	var curScale, newScale;
+	var curAbName;
+	//folder variables
+	var curPdfFolder, curSvgFolder, curPngFolder, curPngSizeFolder;
+
+	
+
+	batchInit(exportArtboards);
+
+	if(SHOW_EXECUTION_DURATION)
+	{
+		var endTime = stopWatch();
+	}
+	
+	if(errorList.length)
+	{
+		alert("The following errors occurred:\n" + errorList.join(",\n"));
+	}
+	else
+	{
+		if (SHOW_EXECUTION_DURATION)
+		{
+			alert("Execution took " + (endTime - startTime) + " milliseconds.");
+		}
+	}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	// //*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//
 	// //*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//
 	// //*/*/*/*/*/*/*/*/*/*/*///Batch Functions//
@@ -210,7 +332,6 @@ function CustomBatchExport()
 	// 		dependencies:
 	// 		UI_framework
 	// 	*/
-
 
 	// 	//this is the array of files that will be processed
 	// 	var batchFiles = [];
@@ -368,54 +489,7 @@ function CustomBatchExport()
 	// 	}
 
 
-
 	// //*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//
 	// //*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*/*//
-
-
-	////////End//////////
-	///Logic Container///
-	/////////////////////
-
-	if(SHOW_EXECUTION_DURATION)
-	{
-		var startTime = stopWatch();
-	}
-
-	var valid = true;
-
-	var user = $.getenv("USER")
-	var desktopPath = "/Volumes/Macintosh HD/Users/" + user + "/Desktop/";
-	var desktopFolder = new Folder(desktopPath);
-
-	var errorList = [];
-
-	var docRef, aB, workingFolderPath,curFilePath;
-	var pngOptions, pdfOptions, svgOptions;
-	var curScale, newScale;
-	var curAbName;
-	//folder variables
-	var curPdfFolder, curSvgFolder, curPngFolder, curPngSizeFolder;
-
-	
-
-	batchInit(exportArtboards);
-
-	if(SHOW_EXECUTION_DURATION)
-	{
-		var endTime = stopWatch();
-	}
-	
-	if(errorList.length)
-	{
-		alert("The following errors occurred:\n" + errorList.join(",\n"));
-	}
-	else
-	{
-		if (SHOW_EXECUTION_DURATION)
-		{
-			alert("Execution took " + (endTime - startTime) + " milliseconds.");
-		}
-	}
 }
 CustomBatchExport();

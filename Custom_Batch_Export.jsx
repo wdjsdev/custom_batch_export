@@ -57,7 +57,7 @@ function CustomBatchExport()
 				144,
 				192,
 				240,
-				480,
+				480
 			]
 
 	///////Begin/////////
@@ -76,6 +76,7 @@ function CustomBatchExport()
 	{
 		var options = new PDFSaveOptions();
 		options.artboardRange = "" + (abIndex + 1);
+		options.preserveEditability = false;
 		return options;
 	}
 
@@ -111,14 +112,38 @@ function CustomBatchExport()
 	function setSvgOptions(abIndex)
 	{
 		var options = new ExportOptionsSVG();
-		options.preserveEditability = true;
+		options.preserveEditability = false;
+		options.saveMultipleArtboards = true;
+		options.artboardRange = "" + (abIndex + 1);
 		return options;
 	}
+
 
 	function saveSvg(doc, filePath, options, artboardIndex, artboardName)
 	{
 		var destFile = new File(filePath + "/" + artboardName + ".svg");
-		doc.exportFile(destFile, ExportType.SVG, options);
+		var tempFolder = new Folder(Folder.temp + "/tmpFolder" + artboardName);
+		if(!tempFolder.exists){tempFolder.create()};
+
+		var tempFile = new File(tempFolder.fsName + "/" + artboardName + ".svg");
+
+		doc.exportFile(tempFile, ExportType.SVG, options);
+
+		//verify the file was exported
+		var tempFolderContents = tempFolder.getFiles();
+		if(!tempFolderContents.length)
+		{
+			errorList.push("Failed to export the artboard: " + artboardName + ".");
+			tempFolder.remove();
+		}
+		else
+		{
+			tempFile = tempFolderContents[0];
+			tempFile.copy(destFile);
+			tempFile.remove();
+			tempFolder.remove();
+		}
+		
 	}
 
 
@@ -171,6 +196,7 @@ function CustomBatchExport()
 			{
 				curSvgFolder.create();
 			};
+			// svgOptions = setSvgOptions(x);
 			svgOptions = setSvgOptions(x);
 			saveSvg(docRef, curSvgFolder, svgOptions, x, curAbName);
 
@@ -202,6 +228,8 @@ function CustomBatchExport()
 	eval("@JSXBIN@ES@2.0@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");
 
 	
+
+
 	////////End//////////
 	///Logic Container///
 	/////////////////////
@@ -246,5 +274,7 @@ function CustomBatchExport()
 			alert("Execution took " + (endTime - startTime) + " milliseconds.");
 		}
 	}
+
+
 }
 CustomBatchExport();

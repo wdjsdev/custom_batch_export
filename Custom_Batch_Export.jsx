@@ -164,10 +164,33 @@ function CustomBatchExport()
 		return destFolder;
 	}
 
+	function consolidateLayers()
+	{
+		tempLayer = layers.add();
+		// tempLayer.name = docRef.name.replace(/\.ai[t]?/,"");
+
+		//move all artwork onto tempLayer
+		for(var x=1,len=layers.length;x<len;x++)
+		{
+			curLayer = layers[x];
+			for(var y=curLayer.pageItems.length-1;y>=0;y--)
+			{
+				curLayer.pageItems[y].moveToBeginning(tempLayer);
+			}
+		}
+
+		//remove empty layers
+		for(var x=layers.length-1;x>0;x--)
+		{
+			layers[x].remove();
+		}
+	}
+
 	function exportArtboards()
 	{
 		docRef = app.activeDocument;
 		aB = docRef.artboards;
+		layers = docRef.layers;
 		curDocFolder = new Folder(workingFolderPath + "/" + docRef.name.substring(0,docRef.name.lastIndexOf(".")));
 		if(!curDocFolder.exists)
 		{ 
@@ -175,11 +198,17 @@ function CustomBatchExport()
 		}
 		curFilePath = curDocFolder.fsName;
 
+		//move all the artwork to a single temporary layer,
+		//then remove the rest of the layers to prevent
+		//empty layers from remaining in exported SVG files.
+		consolidateLayers();
+
 		//process each artboard
 		for (var x = 0, len = aB.length; x < len; x++)
 		{
 			aB.setActiveArtboardIndex(x);
 			curAbName = aB[x].name;
+			tempLayer.name = curAbName;
 
 			//export pdf
 			curPdfFolder = new Folder(curFilePath + "/PDF/");
@@ -247,7 +276,7 @@ function CustomBatchExport()
 
 	var errorList = [];
 
-	var docRef, aB, workingFolderPath,curFilePath;
+	var docRef, aB, layers, tempLayer, workingFolderPath,curFilePath;
 	var pngOptions, pdfOptions, svgOptions;
 	var curScale, newScale;
 	var curAbName;
